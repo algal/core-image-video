@@ -14,7 +14,7 @@ class StaticVideoViewController: UIViewController {
     var videoSource: VideoSampleBufferSource?
     
     var angleForCurrentTime: Float {
-        return Float(NSDate.timeIntervalSinceReferenceDate() % M_PI*2)
+        return Float(NSDate.timeIntervalSinceReferenceDate.truncatingRemainder(dividingBy: M_PI)*2)
     }
     
     override func loadView() {
@@ -22,13 +22,14 @@ class StaticVideoViewController: UIViewController {
         self.view = coreImageView
     }
     
-    override func viewDidAppear(animated: Bool) {
-        let url = NSBundle.mainBundle().URLForResource("Cat", withExtension: "mp4")!
+    override func viewDidAppear(_ animated: Bool) {
+        let url = Bundle.main.url(forResource: "Cat", withExtension: "mp4")!
         videoSource = VideoSampleBufferSource(url: url) { [unowned self] buffer in
-            let image = CIImage(CVPixelBuffer: buffer)
+            let image = CIImage(cvPixelBuffer: buffer)
             let background = kaleidoscope()(image)
-            let mask = radialGradient(image.extent().center, CGFloat(self.angleForCurrentTime) * 100)
-            let output = blendWithMask(image, mask)(background)
+            let mask = radialGradient(image.extent.center,
+                                      radius: CGFloat(self.angleForCurrentTime) * 100)
+            let output = blendWithMask(image, mask: mask)(background)
             self.coreImageView?.image = output
         }
     }    

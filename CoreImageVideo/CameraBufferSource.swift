@@ -12,8 +12,8 @@ import AVFoundation
 typealias BufferConsumer = (CMSampleBuffer, CGAffineTransform) -> ()
 
 struct CaptureBufferSource {
-    private let captureSession: AVCaptureSession
-    private let captureDelegate: CaptureBufferDelegate
+    fileprivate let captureSession: AVCaptureSession
+    fileprivate let captureDelegate: CaptureBufferDelegate
     var running: Bool = false {
         didSet {
             if running {
@@ -24,9 +24,12 @@ struct CaptureBufferSource {
         }
     }
     
-    init?(device: AVCaptureDevice, transform: CGAffineTransform, callback: BufferConsumer) {
+    init?(device: AVCaptureDevice, transform: CGAffineTransform, callback: @escaping BufferConsumer)
+    {
         captureSession = AVCaptureSession()
-        if let deviceInput = AVCaptureDeviceInput(device: device, error: nil) where captureSession.canAddInput(deviceInput) {
+      if let deviceInput = try? AVCaptureDeviceInput(device: device),
+          captureSession.canAddInput(deviceInput)
+        {
             captureSession.addInput(deviceInput)
             let dataOutput = AVCaptureVideoDataOutput()
             dataOutput.alwaysDiscardsLateVideoFrames = true
@@ -34,7 +37,7 @@ struct CaptureBufferSource {
             captureDelegate = CaptureBufferDelegate { buffer in
                 callback(buffer, transform)
             }
-            dataOutput.setSampleBufferDelegate(captureDelegate, queue: dispatch_get_main_queue())
+            dataOutput.setSampleBufferDelegate(captureDelegate, queue: DispatchQueue.main)
             captureSession.addOutput(dataOutput)
             captureSession.commitConfiguration()
             return
@@ -42,7 +45,7 @@ struct CaptureBufferSource {
         return nil
     }
     
-    init?(position: AVCaptureDevicePosition, callback: BufferConsumer) {
+    init?(position: AVCaptureDevicePosition, callback: @escaping BufferConsumer) {
         if let camera = position.device {
             self.init(device: camera, transform: position.transform, callback: callback)
             return
@@ -52,13 +55,13 @@ struct CaptureBufferSource {
 }
 
 private class CaptureBufferDelegate: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate {
-    let callback: CMSampleBuffer -> ()
+    let callback: (CMSampleBuffer) -> ()
     
-    init(_ callback: CMSampleBuffer -> ()) {
+    init(_ callback: @escaping (CMSampleBuffer) -> ()) {
         self.callback = callback
     }
     
-    func captureOutput(captureOutput: AVCaptureOutput!, didOutputSampleBuffer sampleBuffer: CMSampleBuffer!, fromConnection connection: AVCaptureConnection!) {
+    func captureOutput(_ captureOutput: AVCaptureOutput!, didOutputSampleBuffer sampleBuffer: CMSampleBuffer!, from connection: AVCaptureConnection!) {
         callback(sampleBuffer)
     }
 }

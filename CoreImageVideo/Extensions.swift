@@ -12,27 +12,27 @@ import AVFoundation
 extension CGAffineTransform {
     
     init(rotatingWithAngle angle: CGFloat) {
-        let t = CGAffineTransformMakeRotation(angle)
+        let t = CGAffineTransform(rotationAngle: angle)
         self.init(a: t.a, b: t.b, c: t.c, d: t.d, tx: t.tx, ty: t.ty)
         
     }
     init(scaleX sx: CGFloat, scaleY sy: CGFloat) {
-        let t = CGAffineTransformMakeScale(sx, sy)
+        let t = CGAffineTransform(scaleX: sx, y: sy)
         self.init(a: t.a, b: t.b, c: t.c, d: t.d, tx: t.tx, ty: t.ty)
         
     }
     
-    func scale(sx: CGFloat, sy: CGFloat) -> CGAffineTransform {
-        return CGAffineTransformScale(self, sx, sy)
+    func scale(_ sx: CGFloat, sy: CGFloat) -> CGAffineTransform {
+        return self.scaledBy(x: sx, y: sy)
     }
-    func rotate(angle: CGFloat) -> CGAffineTransform {
-        return CGAffineTransformRotate(self, angle)
+    func rotate(_ angle: CGFloat) -> CGAffineTransform {
+        return self.rotated(by: angle)
     }
 }
 
 extension CIImage {
     convenience init(buffer: CMSampleBuffer) {
-        self.init(CVPixelBuffer: CMSampleBufferGetImageBuffer(buffer))
+        self.init(cvPixelBuffer: CMSampleBufferGetImageBuffer(buffer)!)
     }
 }
 
@@ -45,19 +45,19 @@ extension CGRect {
 extension AVCaptureDevicePosition {
     var transform: CGAffineTransform {
         switch self {
-        case .Front:
+        case .front:
             return CGAffineTransform(rotatingWithAngle: -CGFloat(M_PI_2)).scale(1, sy: -1)
-        case .Back:
+        case .back:
             return CGAffineTransform(rotatingWithAngle: -CGFloat(M_PI_2))
         default:
-            return CGAffineTransformIdentity
+            return CGAffineTransform.identity
             
         }
     }
     
     var device: AVCaptureDevice? {
-        return AVCaptureDevice.devicesWithMediaType(AVMediaTypeVideo).filter {
-            $0.position == self
+        return AVCaptureDevice.devices(withMediaType: AVMediaTypeVideo).filter {
+            ($0 as AnyObject).position == self
             }.first as? AVCaptureDevice
     }
 }
